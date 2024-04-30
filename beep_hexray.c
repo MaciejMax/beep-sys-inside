@@ -17,12 +17,12 @@ NTSTATUS __stdcall DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Regi
 
 
 NTSTATUS __fastcall sub_1C0001120(__int64 a1, IRP *a2, int a3, int a4);
-NTSTATUS __fastcall sub_1C0001360(PDRIVER_OBJECT DriverObject);
+NTSTATUS __fastcall sub_init(PDRIVER_OBJECT DriverObject);
 
-__int64 __fastcall sub_1C0001070(__int64 a1, IRP *a2);
-__int64 __fastcall sub_1C00011B0(__int64 a1, IRP *a2);
-__int64 __fastcall sub_1C0001290(struct _DEVICE_OBJECT *a1, IRP *a2);
-__int64 __fastcall sub_1C0001510(__int64 a1, IRP *a2);
+__int64 __fastcall sub_IRP_MJ_CLEANUP(__int64 a1, IRP *a2);
+__int64 __fastcall sub_IRP_MJ_CLOSE(__int64 a1, IRP *a2);
+__int64 __fastcall sub_IRP_MJ_DEVICE_CONTROL(struct _DEVICE_OBJECT *a1, IRP *a2);
+__int64 __fastcall sub_IRP_MJ_CREATE(__int64 a1, IRP *a2);
 
 void __fastcall CancelFunction(struct _DEVICE_OBJECT *DeviceObject, struct _IRP *Irp);
 void __fastcall CsqAcquireLock(PIO_CSQ Csq, PKIRQL Irql);
@@ -31,8 +31,9 @@ void __fastcall CsqInsertIrp(struct _IO_CSQ *Csq, PIRP Irp);
 void __fastcall CsqReleaseLock(PIO_CSQ Csq, KIRQL Irql);
 void __fastcall CsqRemoveIrp(PIO_CSQ Csq, PIRP Irp);
 
-void __fastcall sub_1C0001810(PDEVICE_OBJECT DeviceObject, PIRP Irp);
-void __fastcall sub_1C00018E0(__int64 a1);uintptr_t sub_1C0006044();
+void __fastcall sub_DriverStartIo(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+void __fastcall sub_DriverUnload(__int64 a1);
+uintptr_t check_security_cookie();
 
 //-------------------------------------------------------------------------
 // Data declarations
@@ -91,13 +92,14 @@ void __fastcall CsqRemoveIrp(PIO_CSQ Csq, PIRP Irp)
 //----- (00000001C0001040) ----------------------------------------------------
 void __fastcall CsqCompleteCanceledIrp(PIO_CSQ Csq, PIRP Irp)
 {
+  // "-1073741536" ERROR_CANCELLED, "The I/O request was cancelled"
   Irp->IoStatus.Status = -1073741536;
   Irp->IoStatus.Information = 0LL;
   IofCompleteRequest(Irp, 0);
 }
 
 //----- (00000001C0001070) ----------------------------------------------------
-__int64 __fastcall sub_1C0001070(__int64 a1, IRP *a2)
+__int64 __fastcall sub_IRP_MJ_CLEANUP(__int64 a1, IRP *a2)
 {
   KIRQL v4; // si
   __int64 v5; // rdx
@@ -167,7 +169,7 @@ NTSTATUS __fastcall sub_1C0001120(__int64 a1, IRP *a2, int a3, int a4)
 // 1C0001120: using guessed type ULONG pSessionId[6];
 
 //----- (00000001C00011B0) ----------------------------------------------------
-__int64 __fastcall sub_1C00011B0(__int64 a1, IRP *a2)
+__int64 __fastcall sub_IRP_MJ_CLOSE(__int64 a1, IRP *a2)
 {
   struct _FAST_MUTEX *v2; // rbx
 
@@ -209,7 +211,7 @@ struct _LIST_ENTRY **__fastcall CsqPeekNextIrp(char *Csq, PIRP Irp, PVOID PeekCo
 }
 
 //----- (00000001C0001290) ----------------------------------------------------
-__int64 __fastcall sub_1C0001290(struct _DEVICE_OBJECT *a1, IRP *a2)
+__int64 __fastcall sub_IRP_MJ_DEVICE_CONTROL(struct _DEVICE_OBJECT *a1, IRP *a2)
 {
   struct _IO_STACK_LOCATION *CurrentStackLocation; // r8
   unsigned int v4; // ebx
@@ -279,7 +281,7 @@ void __fastcall CsqAcquireLock(PIO_CSQ Csq, PKIRQL Irql)
 }
 
 //----- (00000001C0001360) ----------------------------------------------------
-NTSTATUS __fastcall sub_1C0001360(PDRIVER_OBJECT DriverObject)
+NTSTATUS __fastcall sub_init(PDRIVER_OBJECT DriverObject)
 {
   NTSTATUS result; // eax
   char *DeviceExtension; // rdi
@@ -314,12 +316,16 @@ NTSTATUS __fastcall sub_1C0001360(PDRIVER_OBJECT DriverObject)
     if ( !result )
     {
       v4 = DeviceObject;
-      DriverObject->DriverStartIo = (PDRIVER_STARTIO)sub_1C0001810;
-      DriverObject->DriverUnload = (PDRIVER_UNLOAD)sub_1C00018E0;
-      DriverObject->MajorFunction[0] = (PDRIVER_DISPATCH)sub_1C0001510;
-      DriverObject->MajorFunction[2] = (PDRIVER_DISPATCH)sub_1C00011B0;
-      DriverObject->MajorFunction[14] = (PDRIVER_DISPATCH)sub_1C0001290;
-      DriverObject->MajorFunction[18] = (PDRIVER_DISPATCH)sub_1C0001070;
+      DriverObject->DriverStartIo = (PDRIVER_STARTIO)sub_DriverStartIo;
+      DriverObject->DriverUnload = (PDRIVER_UNLOAD)sub_DriverUnload;
+      // IRP_MJ_CREATE
+      DriverObject->MajorFunction[0] = (PDRIVER_DISPATCH)sub_IRP_MJ_CREATE;
+      // IRP_MJ_CLOSE
+      DriverObject->MajorFunction[2] = (PDRIVER_DISPATCH)sub_IRP_MJ_CLOSE;
+      // IRP_MJ_DEVICE_CONTROL 0x0E
+      DriverObject->MajorFunction[14] = (PDRIVER_DISPATCH)sub_IRP_MJ_DEVICE_CONTROL;
+      // IRP_MJ_CLEANUP 0x12
+      DriverObject->MajorFunction[18] = (PDRIVER_DISPATCH)sub_IRP_MJ_CLEANUP;
       IoSetStartIoAttributes(v4, 1u, 0);
       return 0;
     }
@@ -334,14 +340,14 @@ void __fastcall CsqReleaseLock(PIO_CSQ Csq, KIRQL Irql)
 }
 
 //----- (00000001C0001510) ----------------------------------------------------
-__int64 __fastcall sub_1C0001510(__int64 a1, IRP *a2)
+__int64 __fastcall sub_IRP_MJ_CREATE(__int64 a1, IRP *a2)
 {
   struct _FAST_MUTEX *v2; // rbx
 
   v2 = *(struct _FAST_MUTEX **)(a1 + 64);
   ExAcquireFastMutex(v2);
   if ( ++v2[1].Count == 1 )
-    v2[1].Owner = MmLockPagableDataSection(&sub_1C0001510);
+    v2[1].Owner = MmLockPagableDataSection(&sub_IRP_MJ_CREATE);
   ExReleaseFastMutex(v2);
   a2->IoStatus.Status = 0;
   a2->IoStatus.Information = 0LL;
@@ -373,7 +379,7 @@ LABEL_3:
 }
 
 //----- (00000001C0001810) ----------------------------------------------------
-void __fastcall sub_1C0001810(PDEVICE_OBJECT DeviceObject, PIRP Irp)
+void __fastcall sub_DriverStartIo(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
   NTSTATUS v4; // eax
   KIRQL Irql; // [rsp+38h] [rbp+10h] BYREF
@@ -404,7 +410,7 @@ void __fastcall sub_1C0001810(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 }
 
 //----- (00000001C00018E0) ----------------------------------------------------
-void __fastcall sub_1C00018E0(__int64 a1)
+void __fastcall sub_DriverUnload(__int64 a1)
 {
   struct _DEVICE_OBJECT *v1; // rbx
   char *DeviceExtension; // rdi
@@ -426,12 +432,12 @@ void __fastcall sub_1C00018E0(__int64 a1)
 //----- (00000001C0006010) ----------------------------------------------------
 NTSTATUS __stdcall DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 {
-  sub_1C0006044();
-  return sub_1C0001360(DriverObject);
+  check_security_cookie();
+  return sub_init(DriverObject);
 }
 
 //----- (00000001C0006044) ----------------------------------------------------
-uintptr_t sub_1C0006044()
+uintptr_t check_security_cookie()
 {
   uintptr_t result; // rax
 
