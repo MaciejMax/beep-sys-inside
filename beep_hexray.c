@@ -11,55 +11,63 @@
 //-------------------------------------------------------------------------
 // Function declarations
 
-void __fastcall CsqRemoveIrp(PIO_CSQ Csq, PIRP Irp);
-void __fastcall CsqCompleteCanceledIrp(PIO_CSQ Csq, PIRP Irp);
-__int64 __fastcall sub_1C0001070(__int64 a1, IRP *a2);
-NTSTATUS __fastcall sub_1C0001120(__int64 a1, IRP *a2, int a3, int a4);
-__int64 __fastcall sub_1C00011B0(__int64 a1, IRP *a2);
 struct _LIST_ENTRY **__fastcall CsqPeekNextIrp(char *Csq, PIRP Irp, PVOID PeekContext);
-__int64 __fastcall sub_1C0001290(struct _DEVICE_OBJECT *a1, IRP *a2);
-void __fastcall CsqInsertIrp(struct _IO_CSQ *Csq, PIRP Irp);
-void __fastcall CsqAcquireLock(PIO_CSQ Csq, PKIRQL Irql);
-NTSTATUS __fastcall sub_1C0001360(PDRIVER_OBJECT DriverObject);
-void __fastcall CsqReleaseLock(PIO_CSQ Csq, KIRQL Irql);
-__int64 __fastcall sub_1C0001510(__int64 a1, IRP *a2);
-void __fastcall CancelFunction(struct _DEVICE_OBJECT *DeviceObject, struct _IRP *Irp);
-void __fastcall sub_1C0001810(PDEVICE_OBJECT DeviceObject, PIRP Irp);
-void __fastcall sub_1C00018E0(__int64 a1);
+
 NTSTATUS __stdcall DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath);
-uintptr_t sub_1C0006044();
+
+
+NTSTATUS __fastcall sub_1C0001120(__int64 a1, IRP *a2, int a3, int a4);
+NTSTATUS __fastcall sub_1C0001360(PDRIVER_OBJECT DriverObject);
+
+__int64 __fastcall sub_1C0001070(__int64 a1, IRP *a2);
+__int64 __fastcall sub_1C00011B0(__int64 a1, IRP *a2);
+__int64 __fastcall sub_1C0001290(struct _DEVICE_OBJECT *a1, IRP *a2);
+__int64 __fastcall sub_1C0001510(__int64 a1, IRP *a2);
+
+void __fastcall CancelFunction(struct _DEVICE_OBJECT *DeviceObject, struct _IRP *Irp);
+void __fastcall CsqAcquireLock(PIO_CSQ Csq, PKIRQL Irql);
+void __fastcall CsqCompleteCanceledIrp(PIO_CSQ Csq, PIRP Irp);
+void __fastcall CsqInsertIrp(struct _IO_CSQ *Csq, PIRP Irp);
+void __fastcall CsqReleaseLock(PIO_CSQ Csq, KIRQL Irql);
+void __fastcall CsqRemoveIrp(PIO_CSQ Csq, PIRP Irp);
+
+void __fastcall sub_1C0001810(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+void __fastcall sub_1C00018E0(__int64 a1);uintptr_t sub_1C0006044();
 
 //-------------------------------------------------------------------------
 // Data declarations
 
 uintptr_t _security_cookie = 47936899621426uLL;
 __int64 qword_1C0003008 = -47936899621427LL; // weak
-// extern void (__stdcall *IoStartNextPacket)(PDEVICE_OBJECT DeviceObject, BOOLEAN Cancelable);
-// extern PKDEVICE_QUEUE_ENTRY (__stdcall *KeRemoveDeviceQueue)(PKDEVICE_QUEUE DeviceQueue);
-// extern void (__stdcall *MmUnlockPagableImageSection)(PVOID ImageSectionHandle);
-// extern PVOID (__stdcall *MmLockPagableDataSection)(PVOID AddressWithinSection);
-// extern void (__stdcall *ExReleaseFastMutex)(PFAST_MUTEX FastMutex);
-// extern void (__stdcall *IoSetStartIoAttributes)(PDEVICE_OBJECT DeviceObject, BOOLEAN DeferredStartIo, BOOLEAN NonCancelable);
-// extern void (__stdcall *RtlInitUnicodeString)(PUNICODE_STRING DestinationString, PCWSTR SourceString);
-// extern void (__stdcall *KeInitializeSpinLock)(PKSPIN_LOCK SpinLock);
-// extern void (__stdcall *IoDeleteDevice)(PDEVICE_OBJECT DeviceObject);
-// extern void (__stdcall *IoStartPacket)(PDEVICE_OBJECT DeviceObject, PIRP Irp, PULONG Key, PDRIVER_CANCEL CancelFunction);
-// extern void (__stdcall *KeLowerIrql)(KIRQL NewIrql);
-// extern NTSTATUS (__stdcall *IoCsqInitialize)(PIO_CSQ Csq, PIO_CSQ_INSERT_IRP CsqInsertIrp, PIO_CSQ_REMOVE_IRP CsqRemoveIrp, PIO_CSQ_PEEK_NEXT_IRP CsqPeekNextIrp, PIO_CSQ_ACQUIRE_LOCK CsqAcquireLock, PIO_CSQ_RELEASE_LOCK CsqReleaseLock, PIO_CSQ_COMPLETE_CANCELED_IRP CsqCompleteCanceledIrp);
 // extern void (__stdcall *ExAcquireFastMutex)(PFAST_MUTEX FastMutex);
-// extern BOOLEAN (__stdcall *KeRemoveEntryDeviceQueue)(PKDEVICE_QUEUE DeviceQueue, PKDEVICE_QUEUE_ENTRY DeviceQueueEntry);
-// extern NTSTATUS (__stdcall *IoCreateDevice)(PDRIVER_OBJECT DriverObject, ULONG DeviceExtensionSize, PUNICODE_STRING DeviceName, ULONG DeviceType, ULONG DeviceCharacteristics, BOOLEAN Exclusive, PDEVICE_OBJECT *DeviceObject);
-// extern void (__stdcall *IoAcquireCancelSpinLock)(PKIRQL Irql);
-// extern void (__stdcall *KeInitializeEvent)(PRKEVENT Event, EVENT_TYPE Type, BOOLEAN State);
-// extern KIRQL (__stdcall *KfRaiseIrql)(KIRQL NewIrql);
-// extern void (__stdcall *IofCompleteRequest)(PIRP Irp, CCHAR PriorityBoost);
-// extern void (__stdcall *IoReleaseCancelSpinLock)(KIRQL Irql);
-// extern NTSTATUS (__stdcall *IoGetRequestorSessionId)(PIRP Irp, PULONG pSessionId);
-// extern KIRQL (__stdcall *KeAcquireSpinLockRaiseToDpc)(PKSPIN_LOCK SpinLock);
-// extern void (__stdcall *KeReleaseSpinLock)(PKSPIN_LOCK SpinLock, KIRQL NewIrql);
-// extern PIRP (__stdcall *IoCsqRemoveNextIrp)(PIO_CSQ Csq, PVOID PeekContext);
-// extern void (__stdcall *IoCsqInsertIrp)(PIO_CSQ Csq, PIRP Irp, PIO_CSQ_IRP_CONTEXT Context);
+// extern void (__stdcall *ExReleaseFastMutex)(PFAST_MUTEX FastMutex);
 
+// extern void (__stdcall *IoAcquireCancelSpinLock)(PKIRQL Irql);
+// extern NTSTATUS (__stdcall *IoCreateDevice)(PDRIVER_OBJECT DriverObject, ULONG DeviceExtensionSize, PUNICODE_STRING DeviceName, ULONG DeviceType, ULONG DeviceCharacteristics, BOOLEAN Exclusive, PDEVICE_OBJECT *DeviceObject);
+// extern NTSTATUS (__stdcall *IoCsqInitialize)(PIO_CSQ Csq, PIO_CSQ_INSERT_IRP CsqInsertIrp, PIO_CSQ_REMOVE_IRP CsqRemoveIrp, PIO_CSQ_PEEK_NEXT_IRP CsqPeekNextIrp, PIO_CSQ_ACQUIRE_LOCK CsqAcquireLock, PIO_CSQ_RELEASE_LOCK CsqReleaseLock, PIO_CSQ_COMPLETE_CANCELED_IRP CsqCompleteCanceledIrp);
+// extern void (__stdcall *IoCsqInsertIrp)(PIO_CSQ Csq, PIRP Irp, PIO_CSQ_IRP_CONTEXT Context);
+// extern PIRP (__stdcall *IoCsqRemoveNextIrp)(PIO_CSQ Csq, PVOID PeekContext);
+// extern void (__stdcall *IoDeleteDevice)(PDEVICE_OBJECT DeviceObject);
+// extern void (__stdcall *IofCompleteRequest)(PIRP Irp, CCHAR PriorityBoost);
+// extern NTSTATUS (__stdcall *IoGetRequestorSessionId)(PIRP Irp, PULONG pSessionId);
+// extern void (__stdcall *IoReleaseCancelSpinLock)(KIRQL Irql);
+// extern void (__stdcall *IoSetStartIoAttributes)(PDEVICE_OBJECT DeviceObject, BOOLEAN DeferredStartIo, BOOLEAN NonCancelable);
+// extern void (__stdcall *IoStartNextPacket)(PDEVICE_OBJECT DeviceObject, BOOLEAN Cancelable);
+// extern void (__stdcall *IoStartPacket)(PDEVICE_OBJECT DeviceObject, PIRP Irp, PULONG Key, PDRIVER_CANCEL CancelFunction);
+
+// extern KIRQL (__stdcall *KeAcquireSpinLockRaiseToDpc)(PKSPIN_LOCK SpinLock);
+// extern void (__stdcall *KeInitializeEvent)(PRKEVENT Event, EVENT_TYPE Type, BOOLEAN State);
+// extern void (__stdcall *KeInitializeSpinLock)(PKSPIN_LOCK SpinLock);
+// extern void (__stdcall *KeLowerIrql)(KIRQL NewIrql);
+// extern void (__stdcall *KeReleaseSpinLock)(PKSPIN_LOCK SpinLock, KIRQL NewIrql);
+// extern PKDEVICE_QUEUE_ENTRY (__stdcall *KeRemoveDeviceQueue)(PKDEVICE_QUEUE DeviceQueue);
+// extern BOOLEAN (__stdcall *KeRemoveEntryDeviceQueue)(PKDEVICE_QUEUE DeviceQueue, PKDEVICE_QUEUE_ENTRY DeviceQueueEntry);
+// extern KIRQL (__stdcall *KfRaiseIrql)(KIRQL NewIrql);
+
+// extern PVOID (__stdcall *MmLockPagableDataSection)(PVOID AddressWithinSection);
+// extern void (__stdcall *MmUnlockPagableImageSection)(PVOID ImageSectionHandle);
+
+// extern void (__stdcall *RtlInitUnicodeString)(PUNICODE_STRING DestinationString, PCWSTR SourceString);
 
 //----- (00000001C0001010) ----------------------------------------------------
 void __fastcall CsqRemoveIrp(PIO_CSQ Csq, PIRP Irp)
