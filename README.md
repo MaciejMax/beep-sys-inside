@@ -93,6 +93,10 @@ I have now added a newer Ghidra result and an assembly listing from Binary Ninja
 - `beep_ghidra_12.0.1_(0a2b6329).c` — output from Ghidra 12.0.1.
 - `beep.sys_disassembly_binary_ninja.asm` — processor instructions, addresses, imported functions, and names shown in Binary Ninja.
 
+The screenshot below shows `beep.sys` in Decompiler Explorer, with results from angr, Binary Ninja, Ghidra, and Hex-Rays. Click the image to view it at full resolution.
+
+[![Decompiler Explorer comparing beep.sys in angr, Binary Ninja, Ghidra, and Hex-Rays](DecompilerExplorer.PNG)](DecompilerExplorer.PNG)
+
 A decompiler tries to turn machine code into something like C, which is easier to read. The ASM file shows the processor instructions. Comparing both helps explain how the driver works and spot mistakes made by the tools.
 
 ## What is wrong with the old results?
