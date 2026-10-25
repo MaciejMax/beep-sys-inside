@@ -211,49 +211,64 @@ struct _LIST_ENTRY **__fastcall CsqPeekNextIrp(char *Csq, PIRP Irp, PVOID PeekCo
 }
 
 //----- (00000001C0001290) ----------------------------------------------------
+// Handles Device Control requests for a device driver.
+// This function processes various IOCTL (Input/Output Control) requests specified through the IRP.
+// Parameters:
+//   a1 - Pointer to the DEVICE_OBJECT representing the device being controlled.
+//   a2 - Pointer to the IRP associated with the current device control request.
 __int64 __fastcall sub_IRP_MJ_DEVICE_CONTROL(struct _DEVICE_OBJECT *a1, IRP *a2)
 {
-  struct _IO_STACK_LOCATION *CurrentStackLocation; // r8
-  unsigned int v4; // ebx
-  struct _IRP *MasterIrp; // rax
+  struct _IO_STACK_LOCATION *CurrentStackLocation; // Pointer to the current stack location, holds request specifics.
+  unsigned int v4; // Variable to hold return status codes.
+  struct _IRP *MasterIrp; // Pointer to a master IRP, if this IRP is linked to others.
 
+  // Retrieve the current I/O stack location from the IRP to access request details.
   CurrentStackLocation = a2->Tail.Overlay.CurrentStackLocation;
-  if ( CurrentStackLocation->Parameters.Read.ByteOffset.LowPart != 0x10000 )
+
+  // Check specific byte offset conditions to determine how to handle the request.
+  if (CurrentStackLocation->Parameters.Read.ByteOffset.LowPart != 0x10000)
   {
-    if ( CurrentStackLocation->Parameters.Read.ByteOffset.LowPart == 65540 )
+    if (CurrentStackLocation->Parameters.Read.ByteOffset.LowPart == 0x10004)
     {
-      if ( CurrentStackLocation->Parameters.Read.Length >= 8 )
+      if (CurrentStackLocation->Parameters.Read.Length >= 8)
       {
-        a2->IoStatus.Status = 259;
+        // If conditions are met, mark the IRP as pending, indicating the request is queued for later processing.
+        a2->IoStatus.Status = 259; // STATUS_PENDING
         a2->IoStatus.Information = 0LL;
-        CurrentStackLocation->Control |= 1u;
-        IoCsqInsertIrp((PIO_CSQ)((char *)a1->DeviceExtension + 96), a2, 0LL);
-        return 259LL;
+        CurrentStackLocation->Control |= 1u; // Modify control flags for the operation, possibly to delay processing.
+        IoCsqInsertIrp((PIO_CSQ)((char *)a1->DeviceExtension + 96), a2, 0LL); // Queue the IRP for processing.
+        return 259LL; // Return STATUS_PENDING.
       }
-      v4 = -1073741811;
+      v4 = -1073741811; // STATUS_INVALID_DEVICE_REQUEST
       goto LABEL_12;
     }
-LABEL_6:
-    v4 = -1073741811;
-    goto LABEL_12;
-  }
-  if ( CurrentStackLocation->Parameters.Create.Options < 8 )
     goto LABEL_6;
-  MasterIrp = a2->AssociatedIrp.MasterIrp;
-  if ( !*(_DWORD *)&MasterIrp->Type || *(_DWORD *)(&MasterIrp->Size + 1) )
+  }
+  if (CurrentStackLocation->Parameters.Create.Options < 8)
   {
-    a2->IoStatus.Status = 259;
+    goto LABEL_6;
+  }
+
+  MasterIrp = a2->AssociatedIrp.MasterIrp;
+  if (!*(_DWORD *)&MasterIrp->Type || *(_DWORD *)(&MasterIrp->Size + 1))
+  {
+    // If further conditions are met, treat the IRP as pending again, indicating queued or delayed processing.
+    a2->IoStatus.Status = 259; // STATUS_PENDING
     a2->IoStatus.Information = 0LL;
     CurrentStackLocation->Control |= 1u;
-    IoStartPacket(a1, a2, 0LL, (PDRIVER_CANCEL)CancelFunction);
+    IoStartPacket(a1, a2, 0LL, (PDRIVER_CANCEL)CancelFunction); // Start processing the IRP.
     return 259LL;
   }
-  v4 = 0;
+  v4 = 0; // STATUS_SUCCESS
+
 LABEL_12:
-  a2->IoStatus.Status = v4;
-  a2->IoStatus.Information = 0LL;
-  IofCompleteRequest(a2, 0);
-  return v4;
+  a2->IoStatus.Status = v4; // Set the final status of the IRP based on the conditions checked.
+  a2->IoStatus.Information = 0LL; // Reset the information field, typically used for data transfer sizes.
+  IofCompleteRequest(a2, 0); // Complete the IRP, indicating that no further processing is needed.
+  return v4; // Return the status code.
+LABEL_6:
+  v4 = -1073741811; // STATUS_INVALID_DEVICE_REQUEST
+  goto LABEL_12;
 }
 
 //----- (00000001C0001300) ----------------------------------------------------
@@ -379,32 +394,59 @@ LABEL_3:
 }
 
 //----- (00000001C0001810) ----------------------------------------------------
+// Start I/O routine for a device driver.
+// This function is called to start processing a specific IRP queued to the device.
+// Parameters:
+//   DeviceObject - Pointer to the DEVICE_OBJECT representing the device.
+//   Irp - Pointer to the IRP that needs to be processed.
 void __fastcall sub_DriverStartIo(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
-  NTSTATUS v4; // eax
-  KIRQL Irql; // [rsp+38h] [rbp+10h] BYREF
+  NTSTATUS v4; // Used to store the status result of operations.
+  KIRQL Irql; // Used to store the current IRQL level when acquiring or releasing a spin lock.
 
-  Irql = 0;
+  Irql = 0; // Initialize the IRQL variable.
+  // Acquire the cancel spin lock to prevent the IRP from being cancelled while it is being started.
   IoAcquireCancelSpinLock(&Irql);
-  if ( Irp )
+
+  // Check if the IRP is not NULL to avoid processing a null pointer.
+  if (Irp)
   {
+    // Clear the cancel routine for the IRP, as it is now being actively processed and cannot be cancelled in the same way.
     _InterlockedExchange64((volatile __int64 *)&Irp->CancelRoutine, 0LL);
+
+    // Release the cancel spin lock after the cancel routine has been safely cleared.
     IoReleaseCancelSpinLock(Irql);
-    if ( Irp->Tail.Overlay.CurrentStackLocation->Parameters.Read.ByteOffset.LowPart == 0x10000 )
+
+    // Check if the byte offset specified in the IRP matches a specific condition.
+    if (Irp->Tail.Overlay.CurrentStackLocation->Parameters.Read.ByteOffset.LowPart == 0x10000)
+    {
+      // Call a function to process the IRP further if the condition is met.
+      // This might involve reading or writing data to/from the device or performing some specific device operation.
       v4 = sub_1C0001120(
              (__int64)DeviceObject,
              Irp,
              *(_DWORD *)Irp->AssociatedIrp.MasterIrp,
              *(_DWORD *)(&Irp->AssociatedIrp.MasterIrp->Size + 1));
+    }
     else
-      v4 = -1073741811;
+    {
+      // If the condition is not met, set the IRP status to an error code indicating an invalid device request.
+      v4 = -1073741811; // STATUS_INVALID_DEVICE_REQUEST
+    }
+
+    // Set the IRP status with the result of the processing (either from the condition check or the error).
     Irp->IoStatus.Status = v4;
-    Irp->IoStatus.Information = 0LL;
+    Irp->IoStatus.Information = 0LL; // Clear the information field.
+
+    // Request to start the next packet on the device, signaling readiness to process another IRP.
     IoStartNextPacket(DeviceObject, 1u);
+
+    // Complete the request and indicate whether to boost priority (priority boost flag is set to 0 here).
     IofCompleteRequest(Irp, 0);
   }
   else
   {
+    // If the IRP is NULL, simply release the cancel spin lock and exit.
     IoReleaseCancelSpinLock(Irql);
   }
 }
