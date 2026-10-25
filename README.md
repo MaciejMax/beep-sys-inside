@@ -6,26 +6,29 @@ I looked inside the Windows `beep.sys` driver to check whether it writes to the 
 
 ## Then and now
 
-The same request — a simple beep — takes a different path:
+The same request — a simple beep — takes a different path.
+
+### Older Windows: PC Speaker
 
 ```mermaid
-flowchart TB
-    subgraph older [Older Windows with PC Speaker support]
-        direction LR
+flowchart TD
         oldApp[Program] --> oldBeep["Beep()"]
         oldBeep --> oldDriver[Driver and hardware support]
         oldDriver -->|Hardware ports| pit[PIT timer]
         pit --> pcSpeaker[PC Speaker]
-    end
 
-    subgraph current [Windows with the beep.sys examined here]
-        direction LR
+```
+
+### Modern Windows: session audio
+
+```mermaid
+flowchart TD
+
         app[Program] --> beep["Beep()"]
         beep --> driver[beep.sys]
         driver -->|Frequency and duration| audio[Windows audio for the user's session]
         audio --> local[Local speakers or headphones]
         audio --> remote[Remote Desktop client audio]
-    end
 ```
 
 This is a simplified view. Remote playback is one possible output, depending on the session and connection settings.
@@ -55,6 +58,12 @@ Get-FileHash .\beep.sys -Algorithm SHA256
 ```
 
 The file is included for educational purposes so that you can examine how it works yourself. The rights to the driver belong to Microsoft Corporation.
+
+## License
+
+The original text, diagrams, and other original contributions by Maciej Max are available under the [MIT License](LICENSE).
+
+The MIT License does not cover Microsoft's `beep.sys`, code recovered from that driver, or quoted Microsoft documentation. Those materials remain the property of their respective rights holders.
 
 ## How were these files created?
 
